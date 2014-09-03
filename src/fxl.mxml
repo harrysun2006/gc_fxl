@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="800"
+                horizontalScrollPolicy="off" verticalScrollPolicy="off" preinitialize="preinit()">
+  <mx:VBox height="100%" width="100%" paddingLeft="6" paddingTop="6" paddingRight="6"
+           paddingBottom="6">
+    <mx:HBox width="100%">
+      <mx:TextInput id="tiSheet" width="64"/>
+      <mx:TextInput id="tiRow" width="64"/>
+      <mx:TextInput id="tiCol" width="64"/>
+      <mx:Button label="Excel" click="EXCEL()"/>
+      <mx:Button label="Test01" toolTip="Read" click="test01()"/>
+      <mx:Button label="CSV" click="CSV()"/>
+      <mx:Button label="Test61" click="test61()"/>
+      <mx:Button label="Clear" click="clear(event)"/>
+    </mx:HBox>
+    <mx:Label id="l1" width="100%" text="Excel文件: "/>
+    <mx:Label id="l2" width="100%" text="CSV文件: "/>
+    <mx:TextArea id="log" height="100%" width="100%" wordWrap="false"/>
+  </mx:VBox>
+  <mx:Style>
+    global
+    {
+    	color:#000000;
+    	cornerRadius:0;
+    	fontWeight:normal;
+    	fontSize:14px;
+    }
+    Application
+    {
+    	backgroundGradientColors:#FFFFFF,#FFFFFF;
+    	themeColor: #0000FF;
+    }
+    Alert
+    {
+    	titleStyleName: "alertTitle";
+    	messageStyleName: "alertMessage";
+    	buttonStyleName: "alertButton";
+    	headerStyleName: "alertHeader";
+    	backgroundColor: #CCCCCC;
+    	color: #FFFFFF;
+    	areaFill:#CCCCCC;
+    	borderColor:#000000;
+    	borderStyle:solid;
+    	dropShadowEnabled:true;
+    	shadowDirection:left;
+    	shadowDistance:1;
+    	dropShadowColor:#000000;
+    	fillColors:#CCCCCC;
+    	horizontalAlign: left;
+    	headerColors: #5555FF, #0000CC;
+    }
+    .alertHeader
+    {
+    }
+    .alertTitle
+    {
+    	letterSpacing: 0;
+    	fontSize: 16px;
+    	color: white;
+    }
+    .alertMessage
+    {
+    	letterSpacing: 0;
+    	fontSize: 14px;
+    	fontWeight: normal;
+    	color: black;
+    }
+    .alertButton
+    {
+    	letterSpacing: 0;
+    	fontSize: 14px;
+    	cornerRadius: 2;
+    	fontWeight: normal;
+    	textRollOverColor: red;
+    	color: black;
+    }
+  </mx:Style>
+  <mx:Script>
+    <![CDATA[
+      import fxl.xls.Workbook;
+      import fxl.xls.Worksheet;
+
+      import mx.collections.ArrayCollection;
+      import mx.controls.Alert;
+      import mx.formatters.NumberBaseRoundType;
+      import mx.formatters.NumberFormatter;
+
+      private static const NF0:NumberFormatter = new NumberFormatter();
+      private static const NF2:NumberFormatter = new NumberFormatter();
+      private var excel:FileReference = null;
+      private var csv:FileReference = null;
+
+      private function preinit():void
+      {
+        NF0.rounding = NumberBaseRoundType.NEAREST;
+        NF0.precision = 0;
+        NF0.useThousandsSeparator = false;
+        NF2.rounding = NumberBaseRoundType.NEAREST;
+        NF2.precision = 2;
+        NF2.useThousandsSeparator = false;
+      }
+
+      private function _trace(s:String):void
+      {
+        /*
+           var s:String = "";
+           for (var i:int=0; i < vars.length; i++)
+           s += vars[i] + ",";
+           s = s.substring(0, s.length - 1);
+         */
+        log.text += s+"\n";
+      }
+
+      private function clear(e:Event):void
+      {
+        log.text = "";
+      }
+
+      private function EXCEL():void
+      {
+        _import(function(e:Event):void
+          {
+            excel = e.target as FileReference;
+            l1.text = "Excel文件: " + excel.name + "[" + excel.size + "]";
+          }, "Excel File", "*.xls");
+      }
+
+      private function CSV():void
+      {
+        _import(function(e:Event):void
+          {
+            csv = e.target as FileReference;
+            l2.text = "CSV文件: " + csv.name + "[" + csv.size + "]";
+          }, "CSV File", "*.csv");
+      }
+
+      private function test01():void
+      {
+        var si:int = tiSheet.text ? Number(tiSheet.text) : -1;
+        var row:int = tiRow.text ? Number(tiRow.text) : -1;
+        var col:int = tiCol.text ? Number(tiCol.text) : -1;
+        var ex:Array = ["测算", "资料", "油耗-材料", "财务", "决算", "分析", "Sheet1"];
+        read(si, row, col);
+      }
+
+      private function read(si:int=-1, row:int=-1, col:int=-1, ex:Array=null):void
+      {
+        if (excel == null)
+        {
+          Alert.show("请先浏览选择Excel文件!", "错误", Alert.OK);
+          return;
+        }
+        var b:ByteArray = excel.data;
+        var book:Workbook = new Workbook(excel.name);
+        book.load(b);
+        var ss:ArrayCollection = book.sheets;
+        var s:Worksheet, i:uint, r:uint, c:uint, v:Object, t:String;
+        i = 0;
+        while (i < ss.length)
+        {
+          s = ss.getItemAt(i) as Worksheet;
+          i++;
+          if (si >= 0 && si != i)
+            continue;
+          _trace("====== " + s.name + " ======");
+          if (ex != null && ex.indexOf(s.name) >= 0)
+            continue;
+          for (r = 0; r < s.rows; r++)
+          {
+            t = "";
+            if (row >= 0 && r != row)
+              continue;
+            for (c = 0; c < s.cols; c++)
+            {
+              if (col >= 0 && c != col)
+                continue;
+              v = s.cell(r,c).value;
+              t += (v is Number ? NF2.format(v) : v)+", ";
+            }
+            _trace(t.substring(0, t.length-2));
+          }
+        }
+      }
+
+      private function test61():void
+      {
+        if (csv == null)
+        {
+          Alert.show("请先浏览选择CSV文件!", "错误", Alert.OK);
+          return;
+        }
+        var data:ByteArray = csv.data;
+        var s:String = data.readMultiByte(data.length, "GBK");
+        var ss:Array = s.split("\r\n");
+        var cc:Array, i:uint, d:Object;
+        var l:ArrayCollection = new ArrayCollection();
+        for (i = 0; i < ss.length; i++)
+        {
+          cc = ss[i].split(",");
+          if (cc[0].match(/^\d+$/))
+          {
+            d = {type:1, id:cc[43], bus:cc[44], name:cc[45], sdsr:cc[46], dsdf:cc[48], ydsr:cc[49],
+                gwgz:cc[51], bskk:cc[53], fwys:cc[55], jyj:cc[57], clj:cc[59], csgz:cc[61], 
+                tbgz:cc[63], btgz:cc[65], zzy:cc[67], ysjl:cc[69]};
+            l.addItem(d);
+            if (cc[71].match(/^\d+$/) && cc[72] != "" && cc[73] != "")
+            {
+              d = {type:2, id:cc[71], bus:cc[72], name:cc[73], sdsr:cc[74], dsdf:cc[76], ydsr:cc[77],
+                  gwgz:cc[79], bskk:cc[81], fwys:cc[83], jyj:0, clj:0, csgz:cc[85],
+                  tbgz:cc[87], btgz:cc[89], zzy:cc[91], ysjl:cc[93]};
+              l.addItem(d);
+            }
+          }
+        }
+        for each (d in l)
+          _trace(d.id+","+d.bus+","+d.name+":"+d.sdsr);
+      }
+
+      public static function _import(callback:Function, description:String=null, extension:String=null, single:Boolean=true):void
+      {
+        importFile(callback, description, extension);
+      }
+
+      private static function importFile(callback:Function, description:String=null, extension:String=null):void
+      {
+        description = description ? description : "所有文件(*.*)";
+        extension = extension ? extension : "*.*";
+        var fr:FileReference=new FileReference();
+        var ff:FileFilter=new FileFilter(description, extension);
+        fr.browse([ff]);
+        fr.addEventListener(Event.SELECT, function(e:Event):void {fr.load();});
+        if (callback is Function)
+          fr.addEventListener(Event.COMPLETE, callback);
+      }
+    ]]>
+  </mx:Script>
+</mx:Application>

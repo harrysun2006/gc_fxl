@@ -1,0 +1,14 @@
+<project name="fxl" basedir="." default="swc">
+
+	<property environment="fxl"/>
+  <property name="app.name" value="fxl"/>
+
+	<target name="swc">
+		<echo>Compile swc file in: ${basedir}</echo>
+	  <exec executable="compc" dir="${basedir}">
+	    <arg line=" -load-config swc-config.xml"/>
+	  	<!--arg line=" -source-path=src -include-classes='fxl.xls.Workbook' -output=fxl.swc"/-->
+	  </exec>
+	</target>
+
+</project>
